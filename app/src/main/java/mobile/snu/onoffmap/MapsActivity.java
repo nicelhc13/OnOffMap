@@ -1,5 +1,7 @@
 package mobile.snu.onoffmap;
 
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 
@@ -13,15 +15,35 @@ import com.google.android.gms.maps.model.MarkerOptions;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
 
     private GoogleMap mMap;
+    private NetCheckDog baDuk;
+    private IntentFilter mNetworkStateChangedFilter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+        /// Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
+
+        /// First, create intent filter for grapping network change event
+        mNetworkStateChangedFilter = new IntentFilter();
+        mNetworkStateChangedFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+
+        baDuk = new NetCheckDog(this);
+    }
+
+    @Override
+    protected void onResume() {
+        this.registerReceiver(baDuk, mNetworkStateChangedFilter);
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        this.unregisterReceiver(baDuk);
     }
 
 
