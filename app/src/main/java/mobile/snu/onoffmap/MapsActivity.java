@@ -1,9 +1,13 @@
 package mobile.snu.onoffmap;
 
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -12,11 +16,16 @@ import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
+
+public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener {
 
     private GoogleMap mMap;
     private NetCheckDog baDuk;
     private IntentFilter mNetworkStateChangedFilter;
+
+    /// UI
+    private Button placeSearchB;
+    private Button myPosB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,6 +41,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mNetworkStateChangedFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
 
         baDuk = new NetCheckDog(this);
+
+        /// Instantiate UI
+        placeSearchB = (Button) findViewById(R.id.searchB);
+        myPosB = (Button) findViewById(R.id.mposB);
+
+        placeSearchB.setOnClickListener(this);
+        myPosB.setOnClickListener(this);
     }
 
     @Override
@@ -64,5 +80,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch(v.getId()) {
+            case R.id.searchB:
+                Intent trsIntent = new Intent(this, PlaceManager.class);
+                startActivity(trsIntent);
+                //overridePendingTransition(R.anim.callee_move, R.anim.caller_move);
+                break;
+            case R.id.mposB:
+                Toast.makeText(MapsActivity.this, "My position search now!", Toast.LENGTH_SHORT).show();
+                break;
+        }
     }
 }
