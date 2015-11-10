@@ -28,7 +28,7 @@
         -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_key" />
+            android:value="AIzaSyCL0fSGfcZYrnW3GsQfvQ4Z8YtoBP_3vsQ" />
 
         <activity
             android:name=".MapsActivity"
@@ -52,8 +52,14 @@
 
         <use-library android:name="com.google.android.maps" />
 
-        <activity android:name=".PlaceManager" >
+        <activity android:name=".PlaceSearchActivity" >
         </activity>
+
+        <service
+            android:name=".GpsInfo"
+            android:enabled="true"
+            android:exported="true" >
+        </service>
     </application>
 
 </manifest>

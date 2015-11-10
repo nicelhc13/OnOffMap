@@ -27,6 +27,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Button placeSearchB;
     private Button myPosB;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -86,7 +87,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     public void onClick(View v) {
         switch(v.getId()) {
             case R.id.searchB:
-                Intent trsIntent = new Intent(this, PlaceManager.class);
+                Intent trsIntent = new Intent(this, PlaceSearchActivity.class);
                 startActivity(trsIntent);
                 //overridePendingTransition(R.anim.callee_move, R.anim.caller_move);
                 break;
