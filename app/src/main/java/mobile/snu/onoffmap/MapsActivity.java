@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -18,6 +19,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, View.OnClickListener {
+    private static final int GET_PLACE_CODE = 0;
 
     private GoogleMap mMap;
     private NetCheckDog baDuk;
@@ -88,7 +90,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         switch(v.getId()) {
             case R.id.searchB:
                 Intent trsIntent = new Intent(this, PlaceSearchActivity.class);
-                startActivity(trsIntent);
+                startActivityForResult(trsIntent, GET_PLACE_CODE);
                 //overridePendingTransition(R.anim.callee_move, R.anim.caller_move);
                 break;
             case R.id.mposB:
@@ -96,4 +98,27 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 break;
         }
     }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch(resultCode) {
+            case GET_PLACE_CODE:
+                PlaceBean srcPlace = data.getParcelableExtra("srcPlace");
+                PlaceBean destPlace = data.getParcelableExtra("destPlace");
+
+                mMap.clear();
+                LatLng src = new LatLng(srcPlace.getLatitude(), srcPlace.getLongitude());
+                mMap.addMarker(new MarkerOptions().position(src).title("SOURCE"));
+                LatLng dest = new LatLng(destPlace.getLatitude(), destPlace.getLongitude());
+                mMap.addMarker(new MarkerOptions().position(src).title("DESTINATION"));
+
+                mMap.moveCamera(CameraUpdateFactory.newLatLng(src));
+                CameraUpdate zoom = CameraUpdateFactory.zoomTo(15);
+                mMap.animateCamera(zoom);
+                break;
+        }
+    }
+
 }

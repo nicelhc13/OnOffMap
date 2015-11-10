@@ -12,6 +12,7 @@ package mobile.snu.onoffmap;
         import android.os.Bundle;
         import android.util.Log;
         import android.view.View;
+        import android.widget.AdapterView;
         import android.widget.ArrayAdapter;
         import android.widget.Button;
         import android.widget.EditText;
@@ -21,6 +22,7 @@ package mobile.snu.onoffmap;
 
         import com.google.android.gms.common.ConnectionResult;
         import com.google.android.gms.common.api.GoogleApiClient;
+        import com.google.android.gms.location.places.Place;
         import com.google.android.gms.location.places.Places;
 
         import org.json.JSONArray;
@@ -42,6 +44,7 @@ public class PlaceSearchActivity extends AppCompatActivity implements View.OnCli
 {
     private static final String requestURL = "https://maps.googleapis.com/maps/api/place/textsearch/json?";
     private static final String googleApiKey = "AIzaSyCL0fSGfcZYrnW3GsQfvQ4Z8YtoBP_3vsQ";
+    private static final int GET_PLACE_CODE = 0;
 
     // UI
     private EditText srcEditText;
@@ -54,8 +57,14 @@ public class PlaceSearchActivity extends AppCompatActivity implements View.OnCli
     // Search information
     private String srcInput;
     private String destInput;
+    private PlaceBean srcPlace;
+    private PlaceBean destPlace;
+    private int searchType;             // 0: SRC, 1: DEST
 
-    private ArrayAdapter<PlaceBean> resultListAdapter;
+    private ArrayAdapter<String> resultListAdapter;
+    ArrayList<PlaceBean> placeList;
+
+    private Context mContext;
 
     @SuppressLint("WrongViewCast")
     @Override
@@ -75,16 +84,42 @@ public class PlaceSearchActivity extends AppCompatActivity implements View.OnCli
         destSearchButton.setOnClickListener(this);
         searchButton.setOnClickListener(this);
 
-        resultListAdapter = new ArrayAdapter<PlaceBean>(getApplicationContext(), android.R.layout.simple_list_item_1);
+        resultListAdapter = new ArrayAdapter<String>(getApplicationContext(), android.R.layout.simple_list_item_1);
+        resultListView.setOnItemClickListener(mPlaceClickListener);
         resultListView.setAdapter(resultListAdapter);
+
+        mContext = this;
     }
 
+    /**
+     *  ListViews' ItemClickListener
+     *  Through this, we can set dest and src information
+     */
+    private AdapterView.OnItemClickListener mPlaceClickListener = new AdapterView.OnItemClickListener() {
+
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            PlaceBean selPlace = placeList.get(position);
+            if (searchType == 0) {
+                srcPlace = selPlace;
+            } else {
+                destPlace = selPlace;
+            }
+
+            resultListAdapter.clear();
+            //Toast.makeText(mContext, "lat:"+selPlace.getLatitude() +" long:"+selPlace.getLongitude(), Toast.LENGTH_LONG).show();
+        }
+    } ;
 
 
     @Override
     public void onClick(View v) {
         switch(v.getId()) {
             case R.id.edt_b1:
+                // Reset
+                searchType = 0;     // Set the type as source
+                srcPlace = null;
+
                 resultListAdapter.clear();
                 ArrayList<String> results;
                 srcInput = srcEditText.getText().toString();
@@ -92,12 +127,25 @@ public class PlaceSearchActivity extends AppCompatActivity implements View.OnCli
                      new LocListProcessingThread(this).execute(srcInput);
                 break;
             case R.id.edt_b2:
+                // Reset
+                searchType = 1;     // Set the type as dest
+                destPlace = null;
+
                 resultListAdapter.clear();
                 destInput = destEditText.getText().toString();
                 if(destInput != "" && destInput != null)
                     new LocListProcessingThread(this).execute(destInput);
                 break;
             case R.id.r_search_b:
+                if (destPlace != null && srcPlace != null) {
+                    Intent placePack = new Intent();
+                    placePack.putExtra("srcPlace", srcPlace);
+                    placePack.putExtra("destPlace", destPlace);
+                    setResult(GET_PLACE_CODE, placePack);
+                    finish();
+                } else {
+                    Toast.makeText(mContext, "You need to select source and destination place!", Toast.LENGTH_LONG).show();
+                }
                 break;
         }
     }
@@ -115,9 +163,11 @@ public class PlaceSearchActivity extends AppCompatActivity implements View.OnCli
                                                         , Void
                                                         , ArrayList<PlaceBean>> {
         private Context mContext;
+        private ArrayList<String> expressList;
 
         public LocListProcessingThread(Context context) {
             mContext = context;
+            expressList = new ArrayList<String>();
         }
 
         /**
@@ -176,7 +226,7 @@ public class PlaceSearchActivity extends AppCompatActivity implements View.OnCli
          * @return
          */
         private ArrayList<PlaceBean> getPlaceInformation(String place) {
-            ArrayList<PlaceBean> placeNameList = new ArrayList<PlaceBean>();
+            placeList = new ArrayList<PlaceBean>();
             String urlString;
             String json;
 
@@ -193,24 +243,27 @@ public class PlaceSearchActivity extends AppCompatActivity implements View.OnCli
                 JSONObject placeObj;
                 JSONObject geomtryObj;
                 JSONObject locationObj;
+
                 for(int i = 0; i < jsonArr.length(); i++) {
                     placeObj = jsonArr.getJSONObject(i);
                     geomtryObj = (JSONObject) placeObj.get("geometry");
                     locationObj = (JSONObject) geomtryObj.get("location");
-                    elePlace.setName(placeObj.getString("name"));
-                    elePlace.setAddress(placeObj.getString("formatted_address"));
-                    elePlace.setId(placeObj.getString("place_id"));
-                    elePlace.setRating(placeObj.getString("rating"));
-                    elePlace.setLatitude(locationObj.getDouble("lat"));
-                    elePlace.setLongitude(locationObj.getDouble("lng"));
 
-                    placeNameList.add(elePlace);
+                    elePlace.setName(placeObj.optString("name"));
+                    elePlace.setAddress(placeObj.optString("formatted_address"));
+                    elePlace.setId(placeObj.optString("place_id"));
+                    elePlace.setRating(placeObj.optString("rating"));
+                    elePlace.setLatitude(locationObj.optDouble("lat"));
+                    elePlace.setLongitude(locationObj.optDouble("lng"));
+
+                    placeList.add(elePlace);
+                    expressList.add(elePlace.getName());
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
 
-            return placeNameList;
+            return placeList;
         }
 
         @Override
@@ -230,8 +283,8 @@ public class PlaceSearchActivity extends AppCompatActivity implements View.OnCli
 
         @Override
         protected void onPostExecute(ArrayList<PlaceBean> results) {
-            Toast.makeText(mContext, results.get(0).getLatitude() + ":" + results.get(0).getLongitude(), Toast.LENGTH_LONG).show();
-            resultListAdapter.addAll(results);
+            //Toast.makeText(mContext, results.get(0).getLatitude() + ":" + results.get(0).getLongitude(), Toast.LENGTH_LONG).show();
+            resultListAdapter.addAll(expressList);
         }
     }
 }
